@@ -64,31 +64,50 @@
             </div>
         </div>
 
-        <!-- 2. Main Trend Graph -->
-        <div class="card p-6">
+        <!-- 3. Work Analysis & Comparison Section (New) -->
+        <div class="card p-6 col-span-full">
             <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                <i data-lucide="trending-up" class="w-5 h-5"></i>
-                投稿作品のパフォーマンス推移
+                <i data-lucide="activity" class="w-5 h-5"></i>
+                作品別 推移分析 & 比較
             </h2>
-            <div class="h-80 w-full">
-                <canvas id="chart-main"></canvas>
-            </div>
-        </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Selectors -->
+                <div class="lg:col-span-1 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">メイン作品を選択</label>
+                        <select id="work-selector-main"
+                            class="w-full text-sm border-slate-300 rounded-md shadow-sm p-2 border">
+                            <!-- JS populated -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">比較する作品を追加 (任意)</label>
+                        <select id="work-selector-compare"
+                            class="w-full text-sm border-slate-300 rounded-md shadow-sm p-2 border">
+                            <option value="">(なし)</option>
+                            <!-- JS populated -->
+                        </select>
+                    </div>
 
-        <!-- 3. Insights Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                        <h3 class="text-xs font-bold text-slate-500 uppercase mb-2">Selected Work Stats</h3>
+                        <div id="selected-work-info">
+                            <!-- JS populated -->
+                            <p class="text-sm text-slate-400">作品を選択してください</p>
+                        </div>
+                    </div>
+                </div>
 
-            <!-- Tags Analysis -->
-            <div class="card p-6">
-                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <i data-lucide="tag" class="w-5 h-5"></i>
-                    タグ別 平均ブクマ数 (TOP 10)
-                </h2>
-                <div class="h-64">
-                    <canvas id="chart-tags"></canvas>
+                <!-- Chart -->
+                <div class="lg:col-span-2 h-80">
+                    <canvas id="chart-work-detail"></canvas>
                 </div>
             </div>
+            <p class="text-xs text-slate-400 mt-2 text-right">※データ蓄積により、日々の推移がグラフになります。</p>
+        </div>
 
+        <!-- 4. Insights Section (Simplified) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Scatter Plot (Engagement Quality) -->
             <div class="card p-6">
                 <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
@@ -101,32 +120,8 @@
                 <p class="text-xs text-slate-400 mt-2 text-center">右上にいくほど「よく見られて、かつ評価も高い」神作品です。</p>
             </div>
 
-            <!-- Timing Heatmap (Simple Table Version for MVP) -->
-            <div class="card p-6 col-span-full lg:col-span-1">
-                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                    <i data-lucide="clock" class="w-5 h-5"></i>
-                    投稿時間帯と反応率
-                </h2>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-slate-50 text-slate-600">
-                            <tr>
-                                <th class="p-2 rounded-tl-lg">時間帯</th>
-                                <th class="p-2">投稿数</th>
-                                <th class="p-2">平均ブクマ</th>
-                                <th class="p-2 rounded-tr-lg">評価</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-timing-body">
-                            <!-- JS populated -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
             <!-- Top Performer -->
-            <div
-                class="card p-6 col-span-full lg:col-span-1 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100">
+            <div class="card p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100">
                 <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-indigo-900">
                     <i data-lucide="crown" class="w-5 h-5 text-amber-500"></i>
                     Best Performer
@@ -138,21 +133,23 @@
 
         </div>
 
-        <!-- 4. Data Grid -->
+        <!-- 5. Data Grid (Sortable) -->
         <div class="card p-6 overflow-hidden">
             <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
                 <i data-lucide="list" class="w-5 h-5"></i>
                 全作品リスト
             </h2>
             <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left border-collapse">
-                    <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                <table class="w-full text-sm text-left border-collapse" id="works-table">
+                    <thead class="bg-slate-50 text-slate-600 border-b border-slate-200 cursor-pointer select-none">
                         <tr>
                             <th class="p-3 w-16">Thumb</th>
-                            <th class="p-3">Title / Date</th>
-                            <th class="p-3 text-right">Bookmarks</th>
-                            <th class="p-3 text-right">Views</th>
-                            <th class="p-3 text-right">Engagement</th>
+                            <th class="p-3 hover:bg-slate-100" onclick="sortTable(1, 'string')">Title / Date ⇕</th>
+                            <th class="p-3 text-right hover:bg-slate-100" onclick="sortTable(2, 'number')">Bookmarks ⇕
+                            </th>
+                            <th class="p-3 text-right hover:bg-slate-100" onclick="sortTable(3, 'number')">Views ⇕</th>
+                            <th class="p-3 text-right hover:bg-slate-100" onclick="sortTable(4, 'number')">Engagement ⇕
+                            </th>
                             <th class="p-3">Tags</th>
                         </tr>
                     </thead>
@@ -169,74 +166,233 @@
         // Init Icons
         lucide.createIcons();
 
-        // Data Fetching and Processing
+        // Global data storage
+        let globalHistory = [];
+        let globalWorks = [];
+        let timeSeriesData = {}; // { workId: [{date, bookmarks, views}, ...] }
+        let chartInstance = null;
+        let currentSort = { col: 2, dir: 'desc' }; // Default sort by bookmarks desc
+
+        // Data Fetching
         async function initDashboard() {
             const statusEl = document.getElementById('last-updated');
             try {
                 statusEl.textContent = 'Initializing...';
-                console.log('Starting initDashboard...');
 
-                // GitHub Pages deployment strategy:
-                // We deploy 'dashboard/*' to root, and 'data/*' to root/data
-                // So the correct relative path is ./data/analytics_history.json
-                // Add timestamp to bypass cache
                 const dataUrl = `./data/analytics_history.json?t=${Date.now()}`;
-
-                statusEl.textContent = 'Fetching data...';
-                console.log(`Fetching data from ${dataUrl} ...`);
-
                 const response = await fetch(dataUrl);
 
-                if (!response.ok) {
-                    throw new Error(`Data Access Error: ${response.status} ${response.statusText}`);
-                }
+                if (!response.ok) throw new Error(`Data Access Error: ${response.status}`);
 
-                statusEl.textContent = 'Parsing JSON...';
                 const history = await response.json();
+                if (!history || history.length === 0) throw new Error('Data empty');
 
-                if (!history) {
-                    throw new Error('Data is null or undefined');
-                }
-                if (history.length === 0) {
-                    throw new Error('Data array is empty');
-                }
-
-                statusEl.textContent = 'Processing data...';
+                globalHistory = history;
                 const latest = history[history.length - 1];
-                const works = latest.works;
+                globalWorks = latest.works;
 
-                if (!works || works.length === 0) {
-                    statusEl.textContent = 'Data loaded but no works found.';
-                    return;
-                }
+                statusEl.textContent = '';
+                document.getElementById('last-updated').textContent = 'Last Updated: ' + new Date(latest.timestamp).toLocaleString();
 
+                processTimeSeriesData(history);
                 updateGlobalStats(latest);
-                renderMainChart(works);
-                renderTagsChart(works);
-                renderScatterChart(works);
-                renderTimingTable(works);
-                renderBestWork(works);
-                renderWorksTable(works);
 
-                console.log('Dashboard initialized successfully.');
+                // Init new comparison section
+                initComparisonSection(globalWorks);
+
+                // Still keep these
+                renderScatterChart(globalWorks);
+                renderBestWork(globalWorks);
+
+                // Initial Table Render
+                renderWorksTable(globalWorks);
+                sortTable(2, 'number'); // Initial sort
 
             } catch (error) {
-                console.error('Error loading data:', error);
+                console.error(error);
                 statusEl.textContent = `Error: ${error.message}`;
                 statusEl.className = "text-sm text-red-600 font-bold";
             }
         }
 
-        // Run when DOM is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initDashboard);
-        } else {
-            initDashboard();
+        // Process history into time-series per work
+        function processTimeSeriesData(history) {
+            // Initialize
+            history.forEach(snapshot => {
+                const date = new Date(snapshot.timestamp).toLocaleDateString() + ' ' + new Date(snapshot.timestamp).getHours() + ':00';
+                snapshot.works.forEach(work => {
+                    if (!timeSeriesData[work.id]) timeSeriesData[work.id] = [];
+                    timeSeriesData[work.id].push({
+                        date: date,
+                        bookmarks: work.total_bookmarks,
+                        views: work.total_view
+                    });
+                });
+            });
         }
 
-        function updateGlobalStats(snapshot) {
-            document.getElementById('last-updated').textContent = 'Last Updated: ' + new Date(snapshot.timestamp).toLocaleString();
+        // --- Comparison Section Logic ---
 
+        function initComparisonSection(works) {
+            const sortedWorks = [...works].sort((a, b) => b.total_bookmarks - a.total_bookmarks);
+            const mainSel = document.getElementById('work-selector-main');
+            const compSel = document.getElementById('work-selector-compare');
+
+            // Populate options
+            [mainSel, compSel].forEach(sel => {
+                sortedWorks.forEach(w => {
+                    const opt = document.createElement('option');
+                    opt.value = w.id;
+                    opt.textContent = `${w.title.substring(0, 20)} (B:${w.total_bookmarks})`;
+                    sel.appendChild(opt);
+                });
+            });
+
+            // Add event listeners
+            mainSel.addEventListener('change', updateComparisonChart);
+            compSel.addEventListener('change', updateComparisonChart);
+
+            // Initial selection (Top 1)
+            if (sortedWorks.length > 0) mainSel.value = sortedWorks[0].id;
+
+            updateComparisonChart();
+        }
+
+        function updateComparisonChart() {
+            const mainId = document.getElementById('work-selector-main').value;
+            const compId = document.getElementById('work-selector-compare').value;
+
+            if (!mainId) return;
+
+            const ctx = document.getElementById('chart-work-detail').getContext('2d');
+            if (chartInstance) chartInstance.destroy(); // Clear previous
+
+            const datasets = [];
+            let labels = [];
+
+            // Helper to add dataset
+            const addData = (id, color, isMain) => {
+                const dataPoints = timeSeriesData[id] || [];
+                // Update labels (union of timestamps if needed, but usually sync)
+                if (dataPoints.length > labels.length) labels = dataPoints.map(d => d.date);
+
+                const workName = globalWorks.find(w => w.id === id)?.title || id;
+
+                datasets.push({
+                    label: `${workName} (Bookmarks)`,
+                    data: dataPoints.map(d => d.bookmarks),
+                    borderColor: color,
+                    backgroundColor: color,
+                    yAxisID: 'y',
+                    type: 'line',
+                    tension: 0.2
+                });
+
+                // Views (Dotted line)
+                datasets.push({
+                    label: `${workName} (Views)`,
+                    data: dataPoints.map(d => d.views),
+                    borderColor: color,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    borderWidth: 1,
+                    yAxisID: 'y1',
+                    type: 'line',
+                    tension: 0.2,
+                    hidden: true // Hide views by default to avoid clutter
+                });
+
+                if (isMain) updateSelectedWorkInfo(id);
+            };
+
+            addData(mainId, 'rgb(59, 130, 246)', true); // Blue for main
+            if (compId && compId !== mainId) {
+                addData(compId, 'rgb(236, 72, 153)', false); // Pink for compare
+            }
+
+            chartInstance = new Chart(ctx, {
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Bookmarks' } },
+                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Views' } }
+                    },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        function updateSelectedWorkInfo(id) {
+            const work = globalWorks.find(w => w.id === id);
+            if (!work) return;
+
+            const rate = work.total_view > 0 ? (work.total_bookmarks / work.total_view * 100).toFixed(2) : 0;
+            const container = document.getElementById('selected-work-info');
+            container.innerHTML = `
+                <div class="font-bold text-slate-800 mb-2 truncate">${work.title}</div>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-white p-2 rounded border">
+                        <div class="text-[10px] text-slate-400">Total Bookmarks</div>
+                        <div class="text-lg font-bold text-blue-600">${work.total_bookmarks}</div>
+                    </div>
+                    <div class="bg-white p-2 rounded border">
+                        <div class="text-[10px] text-slate-400">Total Views</div>
+                        <div class="text-lg font-bold text-slate-600">${work.total_view}</div>
+                    </div>
+                    <div class="bg-white p-2 rounded border">
+                        <div class="text-[10px] text-slate-400">Engagement</div>
+                        <div class="text-lg font-bold text-emerald-600">${rate}%</div>
+                    </div>
+                </div>
+            `;
+        }
+
+
+        // --- Sorting Table Logic ---
+
+        function sortTable(colIndex, type) {
+            const table = document.getElementById('works-table');
+            const tbody = document.getElementById('table-works-body');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+
+            // Toggle sort direction
+            currentSort.dir = (currentSort.col === colIndex && currentSort.dir === 'desc') ? 'asc' : 'desc';
+            currentSort.col = colIndex;
+
+            rows.sort((rowA, rowB) => {
+                let cellA = rowA.cells[colIndex].textContent.trim();
+                let cellB = rowB.cells[colIndex].textContent.trim();
+
+                // Pre-process values
+                if (type === 'number') {
+                    // Extract numbers (handle "12.3%" or "1,234")
+                    cellA = parseFloat(cellA.replace(/[%,]/g, '')) || 0;
+                    cellB = parseFloat(cellB.replace(/[%,]/g, '')) || 0;
+                } else {
+                    cellA = cellA.toLowerCase();
+                    cellB = cellB.toLowerCase();
+                }
+
+                if (cellA < cellB) return currentSort.dir === 'asc' ? -1 : 1;
+                if (cellA > cellB) return currentSort.dir === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            // Re-append rows
+            tbody.innerHTML = '';
+            rows.forEach(row => tbody.appendChild(row));
+
+            // Visual feedback (simple)
+            const headers = table.querySelectorAll('th');
+            headers.forEach(h => h.classList.remove('bg-slate-100', 'text-blue-600'));
+            headers[colIndex].classList.add('bg-slate-100', 'text-blue-600');
+        }
+
+
+        function updateGlobalStats(snapshot) {
             const works = snapshot.works;
             const totalBookmarks = works.reduce((sum, w) => sum + w.total_bookmarks, 0);
             const totalViews = works.reduce((sum, w) => sum + w.total_view, 0);
@@ -246,105 +402,6 @@
             document.getElementById('stat-bookmarks').textContent = totalBookmarks.toLocaleString();
             document.getElementById('stat-views').textContent = totalViews.toLocaleString();
             document.getElementById('stat-engagement').textContent = avgEngagement + '%';
-        }
-
-        // --- Charts Rendering ---
-
-        function renderMainChart(works) {
-            // Sort by date
-            const sorted = [...works].sort((a, b) => new Date(a.create_date) - new Date(b.create_date));
-            const ctx = document.getElementById('chart-main').getContext('2d');
-
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: sorted.map(w => w.title.length > 10 ? w.title.substring(0, 8) + '...' : w.title),
-                    datasets: [
-                        {
-                            label: 'Bookmarks',
-                            data: sorted.map(w => w.total_bookmarks),
-                            borderColor: 'rgb(236, 72, 153)', // Pink
-                            backgroundColor: 'rgba(236, 72, 153, 0.1)',
-                            yAxisID: 'y',
-                            tension: 0.3,
-                            fill: true
-                        },
-                        {
-                            label: 'Views',
-                            data: sorted.map(w => w.total_view),
-                            borderColor: 'rgb(16, 185, 129)', // Emerald
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            yAxisID: 'y1',
-                            tension: 0.3,
-                            hidden: true
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    scales: {
-                        y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Bookmarks' } },
-                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Views' } }
-                    },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                title: (tooltipItems) => {
-                                    const idx = tooltipItems[0].dataIndex;
-                                    return sorted[idx].title;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function renderTagsChart(works) {
-            const tagStats = {};
-            works.forEach(work => {
-                work.tags.forEach(tag => {
-                    if (!tagStats[tag]) tagStats[tag] = { count: 0, bookmarks: 0 };
-                    tagStats[tag].count++;
-                    tagStats[tag].bookmarks += work.total_bookmarks;
-                });
-            });
-
-            const labels = [];
-            const data = [];
-
-            Object.keys(tagStats).forEach(tag => {
-                const stats = tagStats[tag];
-                if (stats.count >= 1) {
-                    labels.push(tag);
-                    data.push(stats.bookmarks / stats.count);
-                }
-            });
-
-            const indices = labels.map((_, i) => i).sort((a, b) => data[b] - data[a]);
-            const topLabels = indices.slice(0, 10).map(i => labels[i]);
-            const topData = indices.slice(0, 10).map(i => data[i]);
-
-            const ctx = document.getElementById('chart-tags').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: topLabels,
-                    datasets: [{
-                        label: 'Avg. Bookmarks',
-                        data: topData,
-                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                }
-            });
         }
 
         function renderScatterChart(works) {
@@ -385,40 +442,6 @@
             });
         }
 
-        function renderTimingTable(works) {
-            const hourStats = {};
-            for (let i = 0; i < 24; i++) hourStats[i] = { count: 0, bookmarks: 0 };
-
-            works.forEach(w => {
-                const date = new Date(w.create_date);
-                const hour = date.getHours();
-                hourStats[hour].count++;
-                hourStats[hour].bookmarks += w.total_bookmarks;
-            });
-
-            const tbody = document.getElementById('table-timing-body');
-
-            Object.keys(hourStats).forEach(h => {
-                const s = hourStats[h];
-                if (s.count > 0) {
-                    const avg = (s.bookmarks / s.count).toFixed(0);
-                    const tr = document.createElement('tr');
-                    tr.className = "border-b border-slate-100 hover:bg-slate-50";
-                    tr.innerHTML = `
-                        <td class="p-2 font-medium">${h}:00 - ${h}:59</td>
-                        <td class="p-2">${s.count}</td>
-                        <td class="p-2">${avg}</td>
-                        <td class="p-2 text-xs">
-                            <div class="w-full bg-slate-200 rounded-full h-1.5">
-                                <div class="bg-blue-500 h-1.5 rounded-full" style="width: ${Math.min(100, avg / 10)}%"></div>
-                            </div>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                }
-            });
-        }
-
         function renderBestWork(works) {
             if (works.length === 0) return;
             const best = works.reduce((prev, current) => (prev.total_bookmarks > current.total_bookmarks) ? prev : current);
@@ -447,10 +470,10 @@
         }
 
         function renderWorksTable(works) {
-            const sorted = [...works].sort((a, b) => new Date(b.create_date) - new Date(a.create_date));
             const tbody = document.getElementById('table-works-body');
+            tbody.innerHTML = ''; // Clear existing rows before populating
 
-            sorted.forEach(w => {
+            works.forEach(w => {
                 const date = new Date(w.create_date).toLocaleDateString();
                 const rate = w.total_view > 0 ? (w.total_bookmarks / w.total_view * 100).toFixed(1) : "0.0";
                 const img = w.url.replace("i.pximg.net", "i.pixiv.re");
@@ -484,6 +507,9 @@
                 tbody.appendChild(tr);
             });
         }
+
+        // Run
+        initDashboard();
     </script>
 </body>
 
