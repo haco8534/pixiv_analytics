@@ -44,10 +44,14 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
         <!-- 1. Global Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div class="card p-6 border-l-4 border-blue-500">
                 <div class="text-slate-500 text-sm font-medium mb-1">Total Works</div>
                 <div class="text-3xl font-bold" id="stat-works">-</div>
+            </div>
+            <div class="card p-6 border-l-4 border-purple-500">
+                <div class="text-slate-500 text-sm font-medium mb-1">Followers</div>
+                <div class="text-3xl font-bold" id="stat-followers">-</div>
             </div>
             <div class="card p-6 border-l-4 border-pink-500">
                 <div class="text-slate-500 text-sm font-medium mb-1">Total Bookmarks</div>
@@ -399,6 +403,7 @@
             const avgEngagement = totalViews > 0 ? (totalBookmarks / totalViews * 100).toFixed(2) : 0;
 
             document.getElementById('stat-works').textContent = works.length;
+            document.getElementById('stat-followers').textContent = snapshot.stats ? snapshot.stats.followers.toLocaleString() : '-';
             document.getElementById('stat-bookmarks').textContent = totalBookmarks.toLocaleString();
             document.getElementById('stat-views').textContent = totalViews.toLocaleString();
             document.getElementById('stat-engagement').textContent = avgEngagement + '%';

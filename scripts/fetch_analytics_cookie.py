@@ -58,7 +58,44 @@ def main():
         else:
             print("Login Check OK.")
 
-        # 作品一覧取得（ページネーションなしで全IDが取れるのが特徴）
+        # ユーザー基本情報（フォロワー数など）を取得
+        print(f"Fetching User Profile stats for ID: {my_id}...")
+        # full=1 を付けると social 情報（フォロワー数等）が取れる
+        u_url = f"https://www.pixiv.net/ajax/user/{my_id}?full=1"
+        u_res = requests.get(u_url, headers=headers)
+        u_data = u_res.json()
+        
+        user_stats = {
+            "followers": 0,
+            "following": 0,
+            "mypixiv": 0
+        }
+
+        if not u_data['error']:
+            body = u_data['body']
+            # social キーの中に数値がある場合と、直下にある場合があるため確認
+            if 'social' in body:
+                social = body.get('social', {})
+                # APIの仕様によっては文字列で返ってくるかもしれないのでint変換
+                user_stats['followers'] = int(social.get('foo_lower', 0) or body.get('followerCount', 0)) # APIのキー名は変動する可能性あり
+            else:
+                 # fallback: 直接的なキーを探す
+                 user_stats['followers'] = int(body.get('followerCount', 0))
+
+            # もし上記で取れていなければ、body直下の数値を再確認
+            # 実際には social: { list: { ... } } ではなく、単純な数値フィールドを探す
+            # 念のため raw body を確認するための隠しログ（必要なら有効化）
+            # print(f"DEBUG User Body: {json.dumps(body, ensure_ascii=False)}")
+            
+            # 2026年現在の傾向として followerCount が body 直下にあることが多い
+            if user_stats['followers'] == 0 and 'following' in body:
+                 # following はあるが follower が見つからないケースへの保険
+                 pass
+                 
+        else:
+            print(f"Failed to fetch user info: {u_data['message']}")
+
+        # 作品一覧取得
         url = f"https://www.pixiv.net/ajax/user/{my_id}/profile/all"
         res = requests.get(url, headers=headers)
         data = res.json()
@@ -120,11 +157,11 @@ def main():
     print(f"Total works fetched: {len(all_works)}")
 
     if all_works:
-        save_data(all_works)
+        save_data(all_works, user_stats)
     else:
         print("No works found or fetch failed.")
 
-def save_data(new_works):
+def save_data(new_works, user_stats):
     data_dir = os.path.join(os.getcwd(), "data")
     file_path = os.path.join(data_dir, "analytics_history.json")
     
@@ -140,6 +177,7 @@ def save_data(new_works):
     
     snapshot = {
         "timestamp": datetime.datetime.now().isoformat(),
+        "stats": user_stats,
         "works": new_works
     }
     
