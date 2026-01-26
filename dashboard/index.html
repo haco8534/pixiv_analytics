@@ -171,12 +171,18 @@
 
         // Data Fetching and Processing
         async function initDashboard() {
+            const statusEl = document.getElementById('last-updated');
             try {
+                statusEl.textContent = 'Initializing...';
+                console.log('Starting initDashboard...');
+
                 // GitHub Pages deployment strategy:
                 // We deploy 'dashboard/*' to root, and 'data/*' to root/data
                 // So the correct relative path is ./data/analytics_history.json
                 // Add timestamp to bypass cache
                 const dataUrl = `./data/analytics_history.json?t=${Date.now()}`;
+
+                statusEl.textContent = 'Fetching data...';
                 console.log(`Fetching data from ${dataUrl} ...`);
 
                 const response = await fetch(dataUrl);
@@ -185,11 +191,24 @@
                     throw new Error(`Data Access Error: ${response.status} ${response.statusText}`);
                 }
 
+                statusEl.textContent = 'Parsing JSON...';
                 const history = await response.json();
-                if (!history || history.length === 0) return;
 
+                if (!history) {
+                    throw new Error('Data is null or undefined');
+                }
+                if (history.length === 0) {
+                    throw new Error('Data array is empty');
+                }
+
+                statusEl.textContent = 'Processing data...';
                 const latest = history[history.length - 1];
                 const works = latest.works;
+
+                if (!works || works.length === 0) {
+                    statusEl.textContent = 'Data loaded but no works found.';
+                    return;
+                }
 
                 updateGlobalStats(latest);
                 renderMainChart(works);
@@ -199,12 +218,20 @@
                 renderBestWork(works);
                 renderWorksTable(works);
 
+                console.log('Dashboard initialized successfully.');
+
             } catch (error) {
                 console.error('Error loading data:', error);
-                const statusEl = document.getElementById('last-updated');
                 statusEl.textContent = `Error: ${error.message}`;
                 statusEl.className = "text-sm text-red-600 font-bold";
             }
+        }
+
+        // Run when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDashboard);
+        } else {
+            initDashboard();
         }
 
         function updateGlobalStats(snapshot) {
