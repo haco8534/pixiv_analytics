@@ -74,10 +74,10 @@ def main():
         if not u_data['error']:
             body = u_data['body']
             # social キーの中に数値がある場合と、直下にある場合があるため確認
-            if 'social' in body:
-                social = body.get('social', {})
+            if 'social' in body and isinstance(body['social'], dict):
+                social = body['social']
                 # APIの仕様によっては文字列で返ってくるかもしれないのでint変換
-                user_stats['followers'] = int(social.get('foo_lower', 0) or body.get('followerCount', 0)) # APIのキー名は変動する可能性あり
+                user_stats['followers'] = int(social.get('foo_lower', 0) or body.get('followerCount', 0)) 
             else:
                  # fallback: 直接的なキーを探す
                  user_stats['followers'] = int(body.get('followerCount', 0))
