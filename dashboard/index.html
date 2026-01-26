@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pixiv Analytics Dashboard</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <!-- TailwindCSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
@@ -172,8 +175,11 @@
                 // GitHub Pages deployment strategy:
                 // We deploy 'dashboard/*' to root, and 'data/*' to root/data
                 // So the correct relative path is ./data/analytics_history.json
-                console.log('Fetching data from ./data/analytics_history.json ...');
-                const response = await fetch('./data/analytics_history.json');
+                // Add timestamp to bypass cache
+                const dataUrl = `./data/analytics_history.json?t=${Date.now()}`;
+                console.log(`Fetching data from ${dataUrl} ...`);
+
+                const response = await fetch(dataUrl);
 
                 if (!response.ok) {
                     throw new Error(`Data Access Error: ${response.status} ${response.statusText}`);
