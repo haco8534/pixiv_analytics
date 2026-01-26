@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,10 +12,19 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
     </style>
 </head>
+
 <body class="text-slate-800 pb-20">
 
     <!-- Header -->
@@ -64,7 +74,7 @@
 
         <!-- 3. Insights Section -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            
+
             <!-- Tags Analysis -->
             <div class="card p-6">
                 <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
@@ -112,7 +122,8 @@
             </div>
 
             <!-- Top Performer -->
-            <div class="card p-6 col-span-full lg:col-span-1 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100">
+            <div
+                class="card p-6 col-span-full lg:col-span-1 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100">
                 <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-indigo-900">
                     <i data-lucide="crown" class="w-5 h-5 text-amber-500"></i>
                     Best Performer
@@ -159,10 +170,11 @@
         async function initDashboard() {
             try {
                 // GitHub Pages deployment strategy:
-                // Data is expected at ../data/analytics_history.json
-                const response = await fetch('../data/analytics_history.json');
+                // We deploy 'dashboard/*' to root, and 'data/*' to root/data
+                // So the correct relative path is ./data/analytics_history.json
+                const response = await fetch('./data/analytics_history.json');
                 if (!response.ok) throw new Error('Data not found');
-                
+
                 const history = await response.json();
                 if (!history || history.length === 0) return;
 
@@ -185,7 +197,7 @@
 
         function updateGlobalStats(snapshot) {
             document.getElementById('last-updated').textContent = 'Last Updated: ' + new Date(snapshot.timestamp).toLocaleString();
-            
+
             const works = snapshot.works;
             const totalBookmarks = works.reduce((sum, w) => sum + w.total_bookmarks, 0);
             const totalViews = works.reduce((sum, w) => sum + w.total_view, 0);
@@ -203,11 +215,11 @@
             // Sort by date
             const sorted = [...works].sort((a, b) => new Date(a.create_date) - new Date(b.create_date));
             const ctx = document.getElementById('chart-main').getContext('2d');
-            
+
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: sorted.map(w => w.title.length > 10 ? w.title.substring(0,8)+'...' : w.title),
+                    labels: sorted.map(w => w.title.length > 10 ? w.title.substring(0, 8) + '...' : w.title),
                     datasets: [
                         {
                             label: 'Bookmarks',
@@ -234,8 +246,8 @@
                     maintainAspectRatio: false,
                     interaction: { mode: 'index', intersect: false },
                     scales: {
-                        y: { type: 'linear', display: true, position: 'left', title: {display: true, text: 'Bookmarks'} },
-                        y1: { type: 'linear', display: true, position: 'right', grid: {drawOnChartArea: false}, title: {display: true, text: 'Views'} }
+                        y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Bookmarks' } },
+                        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Views' } }
                     },
                     plugins: {
                         tooltip: {
@@ -263,7 +275,7 @@
 
             const labels = [];
             const data = [];
-            
+
             Object.keys(tagStats).forEach(tag => {
                 const stats = tagStats[tag];
                 if (stats.count >= 1) {
@@ -298,7 +310,7 @@
 
         function renderScatterChart(works) {
             const ctx = document.getElementById('chart-scatter').getContext('2d');
-            
+
             const scatterData = works.map(w => ({
                 x: w.total_view,
                 y: w.total_view > 0 ? (w.total_bookmarks / w.total_view * 100) : 0,
@@ -311,7 +323,7 @@
                     datasets: [{
                         label: 'Works',
                         data: scatterData,
-                        backgroundColor: 'rgba(245, 158, 11, 0.6)', 
+                        backgroundColor: 'rgba(245, 158, 11, 0.6)',
                     }]
                 },
                 options: {
@@ -336,7 +348,7 @@
 
         function renderTimingTable(works) {
             const hourStats = {};
-            for(let i=0; i<24; i++) hourStats[i] = {count:0, bookmarks:0};
+            for (let i = 0; i < 24; i++) hourStats[i] = { count: 0, bookmarks: 0 };
 
             works.forEach(w => {
                 const date = new Date(w.create_date);
@@ -346,7 +358,7 @@
             });
 
             const tbody = document.getElementById('table-timing-body');
-            
+
             Object.keys(hourStats).forEach(h => {
                 const s = hourStats[h];
                 if (s.count > 0) {
@@ -359,7 +371,7 @@
                         <td class="p-2">${avg}</td>
                         <td class="p-2 text-xs">
                             <div class="w-full bg-slate-200 rounded-full h-1.5">
-                                <div class="bg-blue-500 h-1.5 rounded-full" style="width: ${Math.min(100, avg/10)}%"></div>
+                                <div class="bg-blue-500 h-1.5 rounded-full" style="width: ${Math.min(100, avg / 10)}%"></div>
                             </div>
                         </td>
                     `;
@@ -388,7 +400,7 @@
                         </div>
                         <div class="bg-white p-2 rounded border border-indigo-100">
                             <div class="text-xs text-slate-400">Rate</div>
-                            <div class="font-bold text-emerald-500">${best.total_view > 0 ? (best.total_bookmarks/best.total_view*100).toFixed(1) : 0}%</div>
+                            <div class="font-bold text-emerald-500">${best.total_view > 0 ? (best.total_bookmarks / best.total_view * 100).toFixed(1) : 0}%</div>
                         </div>
                     </div>
                 </div>
@@ -398,7 +410,7 @@
         function renderWorksTable(works) {
             const sorted = [...works].sort((a, b) => new Date(b.create_date) - new Date(a.create_date));
             const tbody = document.getElementById('table-works-body');
-            
+
             sorted.forEach(w => {
                 const date = new Date(w.create_date).toLocaleDateString();
                 const rate = w.total_view > 0 ? (w.total_bookmarks / w.total_view * 100).toFixed(1) : "0.0";
@@ -425,8 +437,8 @@
                     </td>
                     <td class="p-3">
                         <div class="flex flex-wrap gap-1">
-                            ${w.tags.slice(0,3).map(t => `<span class="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[10px]">${t}</span>`).join('')}
-                            ${w.tags.length > 3 ? `<span class="text-[10px] text-slate-400">+${w.tags.length-3}</span>` : ''}
+                            ${w.tags.slice(0, 3).map(t => `<span class="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[10px]">${t}</span>`).join('')}
+                            ${w.tags.length > 3 ? `<span class="text-[10px] text-slate-400">+${w.tags.length - 3}</span>` : ''}
                         </div>
                     </td>
                 `;
@@ -435,4 +447,5 @@
         }
     </script>
 </body>
+
 </html>
