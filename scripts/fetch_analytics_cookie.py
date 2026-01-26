@@ -33,11 +33,32 @@ def main():
         print("Invalid PHPSESSID format. Cannot extract User ID.")
         return
 
-    print(f"Fetching works for User ID: {my_id}")
+    print(f"Fetching works for User ID: {my_id} (Dashboard Analysis API)")
     
     all_works = []
     
     try:
+        # アナリティクス用のAPIがあるはず
+        # ajax/user/{id}/profile/all でID一覧を取得し、その後に詳細を取得する方式に戻すが、
+        # "manage/illusts" のAPIが使えないなら、個別に "ajax/illust/{id}" を叩くのが確実かもしれない。
+        # ただし件数が多いと遅い。
+        
+        # もう一度 profile/all を試すが、Cookieが効いているか確認するために
+        # "ajax/user/extra" を叩いてログイン状態を確認する。
+        
+        res = requests.get("https://www.pixiv.net/ajax/user/extra", headers=headers)
+        if res.status_code != 200:
+            print(f"Login Check Failed: Status {res.status_code}")
+            return
+            
+        extra_data = res.json()
+        if extra_data['error']:
+            print("Login Check Failed: API Error")
+            # ログインしていないとみなされている可能性大
+        else:
+            print("Login Check OK.")
+
+        # 作品一覧取得（ページネーションなしで全IDが取れるのが特徴）
         url = f"https://www.pixiv.net/ajax/user/{my_id}/profile/all"
         res = requests.get(url, headers=headers)
         data = res.json()
@@ -48,43 +69,48 @@ def main():
 
         illust_ids = list(data['body']['illusts'].keys()) if data['body']['illusts'] else []
         manga_ids = list(data['body']['manga'].keys()) if data['body']['manga'] else []
-        
         all_ids = illust_ids + manga_ids
-        print(f"Found {len(all_ids)} works. Fetching details...")
         
-        chunk_size = 50
-        for i in range(0, len(all_ids), chunk_size):
-            chunk_ids = all_ids[i:i+chunk_size]
+        print(f"Found {len(all_ids)} works. Fetching details via Individual API...")
+        
+        # まとめて取得するAPIが統計を返さないなら、1つずつ叩くしかない
+        # https://www.pixiv.net/ajax/illust/{id}
+        
+        count = 0
+        for wid in all_ids:
+            # 高速化のため、最初の50件だけにする？いや、全件取得したいはず。
+            # 少しウェイトを入れないとBANされる
+            time.sleep(0.5) 
             
-            ids_param = "&".join([f"ids[]={id}" for id in chunk_ids])
-            detail_url = f"https://www.pixiv.net/ajax/user/{my_id}/profile/illusts?{ids_param}&work_category=illustManga&is_first_page=0"
+            url = f"https://www.pixiv.net/ajax/illust/{wid}"
+            res = requests.get(url, headers=headers)
+            w_data = res.json()
             
-            time.sleep(1)
+            if w_data['error']:
+                print(f"Error fetching work {wid}: {w_data['message']}")
+                continue
+                
+            work = w_data['body']
             
-            res = requests.get(detail_url, headers=headers)
-            detail_data = res.json()
+            work_data = {
+                "id": str(work['illustId']),
+                "title": work['illustTitle'],
+                "type": int(work['illustType']), 
+                "create_date": work['createDate'],
+                "page_count": int(work['pageCount']),
+                "width": int(work['width']),
+                "height": int(work['height']),
+                "tags": [t['tag'] for t in work['tags']['tags']],
+                "total_view": int(work['viewCount']),
+                "total_bookmarks": int(work['bookmarkCount']),
+                "total_comments": int(work['commentCount']), 
+                "url": work['urls']['small'] 
+            }
+            all_works.append(work_data)
+            count += 1
             
-            if not detail_data['error']:
-                works = detail_data['body']['works']
-                for work_id, work in works.items():
-                    work_data = {
-                        "id": work['id'],
-                        "title": work['title'],
-                        "type": work['illustType'], 
-                        "create_date": work['createDate'],
-                        "page_count": work['pageCount'],
-                        "width": work['width'],
-                        "height": work['height'],
-                        "tags": work['tags'],
-                        "total_view": work.get('viewCount', 0),
-                        "total_bookmarks": work.get('bookmarkCount', 0),
-                        "total_comments": work.get('commentCount', 0), 
-                        "url": work['url']
-                    }
-                    all_works.append(work_data)
-                print(f"  Fetched {len(all_works)}/{len(all_ids)} works...")
-            else:
-                print(f"  Error fetching chunk: {detail_data['message']}")
+            if count % 10 == 0:
+                print(f"  Fetched {count}/{len(all_ids)} works...")
 
     except Exception as e:
         print(f"Critial Error: {e}")
