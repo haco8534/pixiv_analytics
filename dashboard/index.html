@@ -172,8 +172,12 @@
                 // GitHub Pages deployment strategy:
                 // We deploy 'dashboard/*' to root, and 'data/*' to root/data
                 // So the correct relative path is ./data/analytics_history.json
+                console.log('Fetching data from ./data/analytics_history.json ...');
                 const response = await fetch('./data/analytics_history.json');
-                if (!response.ok) throw new Error('Data not found');
+
+                if (!response.ok) {
+                    throw new Error(`Data Access Error: ${response.status} ${response.statusText}`);
+                }
 
                 const history = await response.json();
                 if (!history || history.length === 0) return;
@@ -191,7 +195,9 @@
 
             } catch (error) {
                 console.error('Error loading data:', error);
-                document.getElementById('last-updated').textContent = 'Error loading data. Please check console.';
+                const statusEl = document.getElementById('last-updated');
+                statusEl.textContent = `Error: ${error.message}`;
+                statusEl.className = "text-sm text-red-600 font-bold";
             }
         }
 
