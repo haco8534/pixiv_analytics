@@ -1,0 +1,42 @@
+name: Publish Dashboard
+
+on:
+  push:
+    branches:
+      - main
+  workflow_run:
+    workflows: ["Daily Pixiv Analytics (Cookie)"]
+    types:
+      - completed
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Prepare Deployment
+        run: |
+          mkdir -p public
+          cp -r dashboard/* public/
+          mkdir -p public/data
+          cp data/analytics_history.json public/data/
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: './public'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2

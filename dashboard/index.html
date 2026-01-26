@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixiv Analytics Dashboard</title>
+    <!-- TailwindCSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .card { background: white; border-radius: 0.75rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); }
+    </style>
+</head>
+<body class="text-slate-800 pb-20">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <i data-lucide="bar-chart-2" class="text-blue-500"></i>
+                Pixiv Analytics
+            </h1>
+            <div class="text-sm text-slate-500" id="last-updated">Updating...</div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- 1. Global Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="card p-6 border-l-4 border-blue-500">
+                <div class="text-slate-500 text-sm font-medium mb-1">Total Works</div>
+                <div class="text-3xl font-bold" id="stat-works">-</div>
+            </div>
+            <div class="card p-6 border-l-4 border-pink-500">
+                <div class="text-slate-500 text-sm font-medium mb-1">Total Bookmarks</div>
+                <div class="text-3xl font-bold" id="stat-bookmarks">-</div>
+            </div>
+            <div class="card p-6 border-l-4 border-emerald-500">
+                <div class="text-slate-500 text-sm font-medium mb-1">Total Views</div>
+                <div class="text-3xl font-bold" id="stat-views">-</div>
+            </div>
+            <div class="card p-6 border-l-4 border-amber-500">
+                <div class="text-slate-500 text-sm font-medium mb-1">Avg. Engagement</div>
+                <div class="text-3xl font-bold" id="stat-engagement">-</div>
+                <div class="text-xs text-slate-400 mt-1">Bookmarks / Views</div>
+            </div>
+        </div>
+
+        <!-- 2. Main Trend Graph -->
+        <div class="card p-6">
+            <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-5 h-5"></i>
+                投稿作品のパフォーマンス推移
+            </h2>
+            <div class="h-80 w-full">
+                <canvas id="chart-main"></canvas>
+            </div>
+        </div>
+
+        <!-- 3. Insights Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Tags Analysis -->
+            <div class="card p-6">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <i data-lucide="tag" class="w-5 h-5"></i>
+                    タグ別 平均ブクマ数 (TOP 10)
+                </h2>
+                <div class="h-64">
+                    <canvas id="chart-tags"></canvas>
+                </div>
+            </div>
+
+            <!-- Scatter Plot (Engagement Quality) -->
+            <div class="card p-6">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <i data-lucide="scatter-chart" class="w-5 h-5"></i>
+                    質と量の相関 (閲覧数 vs ブクマ率)
+                </h2>
+                <div class="h-64">
+                    <canvas id="chart-scatter"></canvas>
+                </div>
+                <p class="text-xs text-slate-400 mt-2 text-center">右上にいくほど「よく見られて、かつ評価も高い」神作品です。</p>
+            </div>
+
+            <!-- Timing Heatmap (Simple Table Version for MVP) -->
+            <div class="card p-6 col-span-full lg:col-span-1">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <i data-lucide="clock" class="w-5 h-5"></i>
+                    投稿時間帯と反応率
+                </h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-50 text-slate-600">
+                            <tr>
+                                <th class="p-2 rounded-tl-lg">時間帯</th>
+                                <th class="p-2">投稿数</th>
+                                <th class="p-2">平均ブクマ</th>
+                                <th class="p-2 rounded-tr-lg">評価</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-timing-body">
+                            <!-- JS populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Top Performer -->
+            <div class="card p-6 col-span-full lg:col-span-1 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100">
+                <h2 class="text-lg font-bold mb-4 flex items-center gap-2 text-indigo-900">
+                    <i data-lucide="crown" class="w-5 h-5 text-amber-500"></i>
+                    Best Performer
+                </h2>
+                <div id="best-work-container" class="flex gap-4">
+                    <!-- JS populated -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 4. Data Grid -->
+        <div class="card p-6 overflow-hidden">
+            <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                <i data-lucide="list" class="w-5 h-5"></i>
+                全作品リスト
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left border-collapse">
+                    <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                        <tr>
+                            <th class="p-3 w-16">Thumb</th>
+                            <th class="p-3">Title / Date</th>
+                            <th class="p-3 text-right">Bookmarks</th>
+                            <th class="p-3 text-right">Views</th>
+                            <th class="p-3 text-right">Engagement</th>
+                            <th class="p-3">Tags</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-works-body">
+                        <!-- JS populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Init Icons
+        lucide.createIcons();
+
+        // Data Fetching and Processing
+        async function initDashboard() {
+            try {
+                // GitHub Pages deployment strategy:
+                // Data is expected at ../data/analytics_history.json
+                const response = await fetch('../data/analytics_history.json');
+                if (!response.ok) throw new Error('Data not found');
+                
+                const history = await response.json();
+                if (!history || history.length === 0) return;
+
+                const latest = history[history.length - 1];
+                const works = latest.works;
+
+                updateGlobalStats(latest);
+                renderMainChart(works);
+                renderTagsChart(works);
+                renderScatterChart(works);
+                renderTimingTable(works);
+                renderBestWork(works);
+                renderWorksTable(works);
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('last-updated').textContent = 'Error loading data. Please check console.';
+            }
+        }
+
+        function updateGlobalStats(snapshot) {
+            document.getElementById('last-updated').textContent = 'Last Updated: ' + new Date(snapshot.timestamp).toLocaleString();
+            
+            const works = snapshot.works;
+            const totalBookmarks = works.reduce((sum, w) => sum + w.total_bookmarks, 0);
+            const totalViews = works.reduce((sum, w) => sum + w.total_view, 0);
+            const avgEngagement = totalViews > 0 ? (totalBookmarks / totalViews * 100).toFixed(2) : 0;
+
+            document.getElementById('stat-works').textContent = works.length;
+            document.getElementById('stat-bookmarks').textContent = totalBookmarks.toLocaleString();
+            document.getElementById('stat-views').textContent = totalViews.toLocaleString();
+            document.getElementById('stat-engagement').textContent = avgEngagement + '%';
+        }
+
+        // --- Charts Rendering ---
+
+        function renderMainChart(works) {
+            // Sort by date
+            const sorted = [...works].sort((a, b) => new Date(a.create_date) - new Date(b.create_date));
+            const ctx = document.getElementById('chart-main').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sorted.map(w => w.title.length > 10 ? w.title.substring(0,8)+'...' : w.title),
+                    datasets: [
+                        {
+                            label: 'Bookmarks',
+                            data: sorted.map(w => w.total_bookmarks),
+                            borderColor: 'rgb(236, 72, 153)', // Pink
+                            backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                            yAxisID: 'y',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Views',
+                            data: sorted.map(w => w.total_view),
+                            borderColor: 'rgb(16, 185, 129)', // Emerald
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            yAxisID: 'y1',
+                            tension: 0.3,
+                            hidden: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: { type: 'linear', display: true, position: 'left', title: {display: true, text: 'Bookmarks'} },
+                        y1: { type: 'linear', display: true, position: 'right', grid: {drawOnChartArea: false}, title: {display: true, text: 'Views'} }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: (tooltipItems) => {
+                                    const idx = tooltipItems[0].dataIndex;
+                                    return sorted[idx].title;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTagsChart(works) {
+            const tagStats = {};
+            works.forEach(work => {
+                work.tags.forEach(tag => {
+                    if (!tagStats[tag]) tagStats[tag] = { count: 0, bookmarks: 0 };
+                    tagStats[tag].count++;
+                    tagStats[tag].bookmarks += work.total_bookmarks;
+                });
+            });
+
+            const labels = [];
+            const data = [];
+            
+            Object.keys(tagStats).forEach(tag => {
+                const stats = tagStats[tag];
+                if (stats.count >= 1) {
+                    labels.push(tag);
+                    data.push(stats.bookmarks / stats.count);
+                }
+            });
+
+            const indices = labels.map((_, i) => i).sort((a, b) => data[b] - data[a]);
+            const topLabels = indices.slice(0, 10).map(i => labels[i]);
+            const topData = indices.slice(0, 10).map(i => data[i]);
+
+            const ctx = document.getElementById('chart-tags').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: topLabels,
+                    datasets: [{
+                        label: 'Avg. Bookmarks',
+                        data: topData,
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                }
+            });
+        }
+
+        function renderScatterChart(works) {
+            const ctx = document.getElementById('chart-scatter').getContext('2d');
+            
+            const scatterData = works.map(w => ({
+                x: w.total_view,
+                y: w.total_view > 0 ? (w.total_bookmarks / w.total_view * 100) : 0,
+                title: w.title
+            }));
+
+            new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Works',
+                        data: scatterData,
+                        backgroundColor: 'rgba(245, 158, 11, 0.6)', 
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Total Views' } },
+                        y: { title: { display: true, text: 'Bookmark Rate (%)' } }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    return `${ctx.raw.title}: Rate ${ctx.raw.y.toFixed(1)}% / View ${ctx.raw.x}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTimingTable(works) {
+            const hourStats = {};
+            for(let i=0; i<24; i++) hourStats[i] = {count:0, bookmarks:0};
+
+            works.forEach(w => {
+                const date = new Date(w.create_date);
+                const hour = date.getHours();
+                hourStats[hour].count++;
+                hourStats[hour].bookmarks += w.total_bookmarks;
+            });
+
+            const tbody = document.getElementById('table-timing-body');
+            
+            Object.keys(hourStats).forEach(h => {
+                const s = hourStats[h];
+                if (s.count > 0) {
+                    const avg = (s.bookmarks / s.count).toFixed(0);
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-slate-100 hover:bg-slate-50";
+                    tr.innerHTML = `
+                        <td class="p-2 font-medium">${h}:00 - ${h}:59</td>
+                        <td class="p-2">${s.count}</td>
+                        <td class="p-2">${avg}</td>
+                        <td class="p-2 text-xs">
+                            <div class="w-full bg-slate-200 rounded-full h-1.5">
+                                <div class="bg-blue-500 h-1.5 rounded-full" style="width: ${Math.min(100, avg/10)}%"></div>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+        }
+
+        function renderBestWork(works) {
+            if (works.length === 0) return;
+            const best = works.reduce((prev, current) => (prev.total_bookmarks > current.total_bookmarks) ? prev : current);
+            const imgUrl = best.url.replace("i.pximg.net", "i.pixiv.re");
+
+            const container = document.getElementById('best-work-container');
+            container.innerHTML = `
+                <div class="w-1/3 aspect-[2/3] bg-slate-200 rounded-lg overflow-hidden relative shadow-sm">
+                    <img src="${imgUrl}" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+                </div>
+                <div class="w-2/3 flex flex-col justify-center">
+                    <div class="text-xs text-indigo-500 font-bold uppercase mb-1">MVP Work</div>
+                    <div class="font-bold text-slate-800 line-clamp-2 leading-tight mb-2">${best.title}</div>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div class="bg-white p-2 rounded border border-indigo-100">
+                            <div class="text-xs text-slate-400">Bookmarks</div>
+                            <div class="font-bold text-pink-500">${best.total_bookmarks}</div>
+                        </div>
+                        <div class="bg-white p-2 rounded border border-indigo-100">
+                            <div class="text-xs text-slate-400">Rate</div>
+                            <div class="font-bold text-emerald-500">${best.total_view > 0 ? (best.total_bookmarks/best.total_view*100).toFixed(1) : 0}%</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderWorksTable(works) {
+            const sorted = [...works].sort((a, b) => new Date(b.create_date) - new Date(a.create_date));
+            const tbody = document.getElementById('table-works-body');
+            
+            sorted.forEach(w => {
+                const date = new Date(w.create_date).toLocaleDateString();
+                const rate = w.total_view > 0 ? (w.total_bookmarks / w.total_view * 100).toFixed(1) : "0.0";
+                const img = w.url.replace("i.pximg.net", "i.pixiv.re");
+
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="p-3">
+                        <div class="w-10 h-10 rounded bg-slate-200 overflow-hidden">
+                            <img src="${img}" class="w-full h-full object-cover" referrerpolicy="no-referrer">
+                        </div>
+                    </td>
+                    <td class="p-3">
+                        <div class="font-medium text-slate-800 line-clamp-1"><a href="https://www.pixiv.net/artworks/${w.id}" target="_blank" class="hover:text-blue-500">${w.title}</a></div>
+                        <div class="text-xs text-slate-400">${date}</div>
+                    </td>
+                    <td class="p-3 text-right font-medium text-slate-700">${w.total_bookmarks}</td>
+                    <td class="p-3 text-right text-slate-500">${w.total_view}</td>
+                    <td class="p-3 text-right">
+                        <span class="px-2 py-1 rounded-full text-xs font-bold ${rate > 10 ? 'bg-pink-100 text-pink-600' : 'bg-slate-100 text-slate-600'}">
+                            ${rate}%
+                        </span>
+                    </td>
+                    <td class="p-3">
+                        <div class="flex flex-wrap gap-1">
+                            ${w.tags.slice(0,3).map(t => `<span class="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[10px]">${t}</span>`).join('')}
+                            ${w.tags.length > 3 ? `<span class="text-[10px] text-slate-400">+${w.tags.length-3}</span>` : ''}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>
