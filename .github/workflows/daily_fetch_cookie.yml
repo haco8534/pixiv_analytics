@@ -5,6 +5,9 @@ on:
     - cron: '0 15 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   fetch-and-save:
     runs-on: ubuntu-latest
